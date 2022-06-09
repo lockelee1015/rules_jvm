@@ -28,7 +28,7 @@ java_library(
     srcs = glob(["*.java"]),
     javacopts = [
         "--release",
-        "11",
+        "8",
     ],
     deps = [
         # The only dependencies here are those required to run

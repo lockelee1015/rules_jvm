@@ -3,10 +3,8 @@ package com.github.bazel_contrib.contrib_rules_jvm.junit5;
 import static org.junit.platform.engine.TestExecutionResult.Status.SUCCESSFUL;
 
 import java.io.PrintWriter;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
@@ -26,7 +24,7 @@ public class CommandLineSummary implements TestExecutionListener {
 
   @Override
   public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult result) {
-    if (result.getStatus().equals(SUCCESSFUL) || result.getThrowable().isEmpty()) {
+    if (result.getStatus().equals(SUCCESSFUL) || !result.getThrowable().isPresent()) {
       failures.remove(testIdentifier);
       return;
     }
@@ -79,7 +77,7 @@ public class CommandLineSummary implements TestExecutionListener {
     }
 
     public Throwable getCause() {
-      return result.getThrowable().orElseThrow();
+      return result.getThrowable().orElseThrow(()->new NoSuchElementException("No value present"));
     }
   }
 }

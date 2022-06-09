@@ -33,8 +33,7 @@ public class PatternFilter implements PostDiscoveryFilter {
     if (!object.isTest()) {
       return FilterResult.included("Including container: " + object.getDisplayName());
     }
-
-    if (object.getSource().isEmpty()) {
+    if (!object.getSource().isPresent()) {
       return FilterResult.excluded("Skipping a test without a source: " + object.getDisplayName());
     }
 

@@ -12,8 +12,12 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.platform.engine.discovery.ClassSelector;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
+import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherConstants;
 import org.junit.platform.launcher.core.LauncherConfig;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
@@ -23,7 +27,7 @@ public class ActualRunner implements RunsTest {
 
   @Override
   public boolean run(String testClassName) {
-    var out = System.getenv("XML_OUTPUT_FILE");
+    String out = System.getenv("XML_OUTPUT_FILE");
     Path xmlOut;
     try {
       xmlOut = out != null ? Paths.get(out) : Files.createTempFile("test", ".xml");
@@ -32,17 +36,18 @@ public class ActualRunner implements RunsTest {
       throw new UncheckedIOException(e);
     }
 
-    try (var bazelJunitXml = new BazelJUnitOutputListener(xmlOut)) {
-      var summary = new CommandLineSummary();
+    try (BazelJUnitOutputListener bazelJunitXml = new BazelJUnitOutputListener(xmlOut)) {
+      CommandLineSummary summary = new CommandLineSummary();
 
       LauncherConfig config =
           LauncherConfig.builder().addTestExecutionListeners(bazelJunitXml, summary).build();
 
-      var classSelector = DiscoverySelectors.selectClass(testClassName);
-
-      var request =
+      ClassSelector classSelector = DiscoverySelectors.selectClass(testClassName);
+      List<ClassSelector> selectors = new ArrayList<>();
+      selectors.add(classSelector);
+      LauncherDiscoveryRequestBuilder request =
           LauncherDiscoveryRequestBuilder.request()
-              .selectors(List.of(classSelector))
+              .selectors(classSelector)
               .filters(includeEngines("junit-jupiter", "junit-vintage"))
               .configurationParameter(LauncherConstants.CAPTURE_STDERR_PROPERTY_NAME, "true")
               .configurationParameter(LauncherConstants.CAPTURE_STDOUT_PROPERTY_NAME, "true");
@@ -51,12 +56,12 @@ public class ActualRunner implements RunsTest {
       request.filters(new PatternFilter(filter));
 
       File exitFile = getExitFile();
-      var originalSecurityManager = System.getSecurityManager();
+      SecurityManager originalSecurityManager = System.getSecurityManager();
       TestRunningSecurityManager testSecurityManager =
           new TestRunningSecurityManager(originalSecurityManager);
       try {
         System.setSecurityManager(testSecurityManager);
-        var launcher = LauncherFactory.create(config);
+        Launcher launcher = LauncherFactory.create(config);
         launcher.execute(request.build());
       } finally {
         testSecurityManager.allowRemoval();
